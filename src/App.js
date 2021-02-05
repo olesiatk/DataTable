@@ -19,7 +19,6 @@ function App() {
         && headersCheckLower.includes('phone')
         && headersCheckLower.includes('full name')){
       setErrorFileFormat(false)
-      console.log ('good');
     } else {
       setErrorFileFormat(true)
       console.log ('bad');
