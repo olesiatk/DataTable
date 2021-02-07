@@ -1,0 +1,16 @@
+.table {
+  margin: 30px auto;
+  border-collapse: collapse;
+}
+
+.table__header {
+  background-color: rgb(204, 204, 244);
+}
+
+.table__cell {
+  padding: 10px;
+  border: 1px solid black;
+}
+.table__cell-invalid {
+  background-color: rgb(244, 204, 204);
+}

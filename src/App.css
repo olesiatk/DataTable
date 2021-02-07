@@ -12,6 +12,23 @@
   color: white;
 }
 
-.App-link {
-  color: #61dafb;
+.App__button {
+  color: white;
+  background-color: rgb(104, 204, 104);
+  padding: 10px;
+  margin: 30px;
+  float: right;
+  border: 1px solid black;
+  cursor: pointer;
+}
+
+.App__message {
+  margin: 30px auto;
+  width: 300px;
+  padding: 50px;
+  border: 1px solid black;
+  text-align: center;
+  color: black;
+  background-color: rgb(244, 204, 204);
+  cursor: pointer;
 }
