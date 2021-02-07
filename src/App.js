@@ -1,7 +1,5 @@
 import './App.css';
 import React, { useState } from 'react';
-import * as XLSX from 'xlsx';
-import DataTable from 'react-data-table-component';
  
 function App() {
  
@@ -11,51 +9,50 @@ function App() {
  
   // process CSV data
   const processData = dataString => {
-    const dataStringLines = dataString.split(/\r\n|\n/);
-    const headers = dataStringLines[0].split(/,(?![^"]*"(?:(?:[^"]*"){2})*[^"]*$)/);
+    const tableDataString = dataString.split(/\r\n|\n/);
+    const tableHead = tableDataString[0].split(';'); 
+    tableHead.unshift('ID');
+    tableHead.push('Dublicate with');
 
-    const headersCheckLower = headers.map(head => head.toLowerCase());
-    if (headersCheckLower.includes('email') 
-        && headersCheckLower.includes('phone')
-        && headersCheckLower.includes('full name')){
+    const headLowerCase = tableHead.map(header => header.toLowerCase());
+    if (headLowerCase.includes('email') 
+        && headLowerCase.includes('phone')
+        && headLowerCase.includes('full name')){
       setErrorFileFormat(false)
     } else {
       setErrorFileFormat(true)
       console.log ('bad');
     }
- 
-    const list = [];
-    for (let i = 1; i < dataStringLines.length; i++) {
-      const row = dataStringLines[i].split(/,(?![^"]*"(?:(?:[^"]*"){2})*[^"]*$)/);
-      if (headers && row.length === headers.length) {
-        const obj = {};
-        for (let j = 0; j < headers.length; j++) {
-          let d = row[j];
-          if (d.length > 0) {
-            if (d[0] === '"')
-              d = d.substring(1, d.length - 1);
-            if (d[d.length - 1] === '"')
-              d = d.substring(d.length - 2, 1);
+
+    const tableBody = tableDataString.slice(1)
+      .map((string, i) => (`${i+1}; `+string+'; ').split(';')
+        .map((userData, index) => {
+          let userObj = {
+            name: tableHead[index],
+            value: userData.trim(),
+            validation: false,
           }
-          if (headers[j]) {
-            obj[headers[j]] = d;
+
+          //check validation
+          switch (userObj.name) {
+            case ('Age'):
+              if (userObj.value >= 21) {
+                userObj.validation = true;
+              }
+              break;
+            default:
+              break;
           }
-        }
- 
-        // remove the blank rows
-        if (Object.values(obj).filter(x => x).length > 0) {
-          list.push(obj);
-        }
-      }
-    }
- 
-    // prepare columns list from headers
-    const columns = headers.map(c => ({
-      name: c,
-      selector: c,
+          return userObj;
+        })
+      )
+        .slice(0,-1);
+
+    const columns = tableHead.map(header => ({
+      name: header,
     }));
  
-    setData(list);
+    setData(tableBody);
     setColumns(columns);
   }
  
@@ -63,25 +60,15 @@ function App() {
   const handleFileUpload = e => {
     const file = e.target.files[0];
     const reader = new FileReader();
-    reader.onload = (evt) => {
-
-        console.log("ok");
-    
-      /* Parse data */
-      const bstr = evt.target.result;
-      const wb = XLSX.read(bstr, { type: 'binary' });
-      /* Get first worksheet */
-      const wsname = wb.SheetNames[0];
-      const ws = wb.Sheets[wsname];
-      /* Convert array of arrays */
-      const data = XLSX.utils.sheet_to_csv(ws, { header: 1 });
-      processData(data);
-    };
-    reader.readAsBinaryString(file);
-
-    reader.onerror = function() {
-      console.log('error');
-    };
+    if (file) {
+      reader.readAsText(file);
+      reader.onload = () => {
+        processData(reader.result);
+      };
+      reader.onerror = () => {
+        console.log(reader.error);
+      };
+    }
   }
 
   const hiddenFileInput = React.useRef(null);
@@ -95,7 +82,10 @@ function App() {
         <p> DataTable </p>
       </header>
       <>
-        <button onClick={handleClick}>
+        <button 
+          title = 'import data in csv format with headers "full name", "phone" and "email"' 
+          onClick={handleClick}
+        >
           Import users
         </button>
         <input
@@ -107,12 +97,33 @@ function App() {
         />
       </>
       {errorFileFormat ? 'File format is not correct': (
-        <DataTable
-          pagination
-          highlightOnHover
-          columns={columns}
-          data={data}
-        />
+    
+        <table>
+          <thead>
+            <tr>
+              {columns.map((header, index) => (
+                  <th key={index} style = {{border: '1px solid black'}}> 
+                    {header.name} 
+                  </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((user, index) => (
+              <tr key = {index}>
+                {user.map((userData, i) => (
+                  <td 
+                    key={i}
+                    style = {{backgroundColor: !userData.validation && 'rgb(244, 204, 204'}}
+                  >
+                    {userData.value}
+                  </td>
+                ))}
+              </tr>  
+            ))}
+          </tbody>
+
+        </table>
       )}
     </div>
   );
