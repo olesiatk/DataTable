@@ -1,5 +1,6 @@
-import './App.css';
 import React, { useState } from 'react';
+import './App.css';
+import { DataTable } from './components/DataTable'
  
 function App() {
  
@@ -25,10 +26,9 @@ function App() {
       console.log ('bad');
     }
 
-
-
+    //set innitial dates
     const tableBody = tableDataString.slice(1)
-      .map((user, i) => (`${i+1}; `+user+'; ').split(';')
+      .map((user, i) => (`${i+1}; `+user+'; ').split(/;(?![^"]*"(?:(?:[^"]*"){2})*[^"]*$)/)
         .map((userData, index) => {
           let userObj = {
             name: tableHead[index],
@@ -73,6 +73,15 @@ function App() {
       }
       return true;
     }
+
+    function checkHasChildren(hasChildren) {
+      return (hasChildren.toLowerCase() ==='true'
+              || hasChildren.toLowerCase() ==='false'
+              || hasChildren ===''
+            ) 
+              ? true
+              : false;
+    }
     // end functions for validation
 
 
@@ -89,16 +98,15 @@ function App() {
           }
           break;
         case ('age'):
-            userData.validation = checkAge(userData.value);
+          userData.validation = checkAge(userData.value);
           break;
         case ('experience'):
-            console.log(user[dataIndex-1], userData);
-            if (!Number.isInteger(+userData.value) 
-                || userData.value < 0 
-                || userData.value > user[dataIndex-1].value
-              ) {
-              userData.validation = false;
-            }
+          if (!Number.isInteger(+userData.value) 
+              || userData.value < 0 
+              || userData.value > user[dataIndex-1].value
+            ) {
+            userData.validation = false;
+          }
           break;
         case ('yearly income'):
           if (isNaN(+userData.value) || +userData.value > 1000000) {
@@ -108,16 +116,26 @@ function App() {
           }
           break;
         case ('has children'):
-            userData.validation = (userData.value.toLowerCase() ==='true'
-              || userData.value.toLowerCase() ==='false'
-              || userData.value ===''
-            ) 
-            ? true
-            : false;
-            if (userData.value === '') {
-              userData.value = 'FALSE';
-            }
-            break;
+          userData.validation = checkHasChildren(userData.value);
+          if (userData.value === '') {
+            userData.value = 'FALSE';
+          }
+          break;
+        case ('license states'):
+          // check if it isn't number
+          userData.validation = !/\d/.test(userData.value);
+          if (userData.value) {
+            userData.value = userData.value.replace(',', '|').split('|').map(state => state.trim().slice(0,2).toUpperCase()).join(' | ');
+          }
+          break;
+        case ('expiration date'):
+          userData.validation = Date.parse(userData.value) 
+            && new Date(userData.value)<=new Date()
+            && (userData.value.includes('/') || userData.value.includes('-'));
+          break;
+        case ('license number'):
+          userData.validation = userData.value.length === 6 && /^[a-zA-Z\d]*$/.test(userData.value)
+          break;
         default:
           break;
       }
@@ -125,16 +143,28 @@ function App() {
     }));
 
     // set data with check unique Phone and Email
-    const usersDataCheckUnique = usersData.map((user, i) => user.map((userData, iDate) => {
+    const usersDataWithCheckUnique = usersData.map((user, i) => user.map((userData, iDate) => {
       if (userData.name.toLowerCase() === 'phone') {
-        const dublicateData = tableBody.find((user, n) => n !== i && user.find(userDataCheck => userDataCheck.value === userData.value));
+        const dublicateData = tableBody
+          .find((user, n) => n !== i 
+            && user
+              .find(userDataCheck => userDataCheck.name === userData.name 
+                && userDataCheck.value === userData.value
+              )
+          );
         if (dublicateData) {
           user[user.length-1].value = dublicateData[0].value;
           userData.validation = false;
         }
       }
       if (userData.name.toLowerCase() === 'email') {
-        const dublicateData = tableBody.find((user, n) => n !== i && user.find(userDataCheck => userDataCheck.value.toLowerCase() === userData.value.toLowerCase()));
+        const dublicateData = tableBody
+          .find((user, n) => n !== i 
+            && user
+              .find(userDataCheck => userDataCheck.name === userData.name 
+                && userDataCheck.value.toLowerCase() === userData.value.toLowerCase()
+              )
+          );
         if (dublicateData) {
           user[user.length-1].value = dublicateData[0].value;
           userData.validation = false;
@@ -143,14 +173,42 @@ function App() {
       return userData;
     }));
 
-
     // set headers
     const headers = tableHead.map(header => ({
-      name: header,
+      name: header.trim(),
+      rule: setRules(header)
     }));
 
+    //function for define collumns rules
+    function setRules(header) {
+      switch (header.toLowerCase()) {
+        case ('phone'):
+          return 'should be unique and in format +1хххххххххх';
+        case ('email'):
+          return 'should be unique'
+        case ('age'):
+          return 'should be not less then 21'
+        case ('experience'):
+          return 'should be not more then age'
+        case ('yearly income'):
+          return 'should be integer or decimal and less 1000000'
+        case ('has children'):
+          return 'should be "true" or "false"'
+        case ('license states'):
+          return 'should be name of states (can be devide with "|")'
+        case ('expiration date'):
+          return 'should be in format YYYY-MM-DD or MM-DD-YYYY'
+        case ('license number'):
+          return 'should have 6 symbols (numbers or letters)'
+        case ('dublicate with'):
+            return 'phone or email this user is repeated with the current user'
+        default:
+            return '';
+      }
+    }
+
     // set state
-    setData(usersDataCheckUnique);
+    setData(usersDataWithCheckUnique);
     setColumns(headers);
   }
  
@@ -162,9 +220,6 @@ function App() {
       reader.readAsText(file);
       reader.onload = () => {
         processData(reader.result);
-      };
-      reader.onerror = () => {
-        console.log(reader.error);
       };
     }
   }
@@ -183,6 +238,7 @@ function App() {
       </header>
       <>
         <button 
+          className = 'App__button'
           title = 'import data in csv format with headers "full name", "phone" and "email"' 
           onClick={handleClick}
         >
@@ -196,35 +252,16 @@ function App() {
           onChange={handleFileUpload}
         />
       </>
-      {errorFileFormat ? 'File format is not correct': (
-    
-        <table>
-          <thead>
-            <tr>
-              {columns.map((header, index) => (
-                  <th key={index} style = {{border: '1px solid black'}}> 
-                    {header.name} 
-                  </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {data.map((user, index) => (
-              <tr key = {index}>
-                {user.map((userData, i) => (
-                  <td 
-                    key={i}
-                    style = {{backgroundColor: !userData.validation && 'rgb(244, 204, 204'}}
-                  >
-                    {userData.value}
-                  </td>
-                ))}
-              </tr>  
-            ))}
-          </tbody>
-
-        </table>
-      )}
+      {errorFileFormat 
+        ? (
+          <div className = "App__message">File format is not correct</div>
+        ): (
+          <DataTable 
+            columns = {columns}
+            data = {data}
+          />
+        )
+      }
     </div>
   );
 }
