@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import './DataTable.css';
 import classNames from 'classnames';
+import PropTypes from 'prop-types';
 
 export const DataTable = ({columns, data}) => {
   return (
@@ -39,3 +40,15 @@ export const DataTable = ({columns, data}) => {
     </table>
   );
 }
+
+DataTable.propTypes = {
+  column: PropTypes.arrayOf(PropTypes.shape({
+    name: PropTypes.string.isRequired,
+    rule: PropTypes.string,
+  })),
+  data: PropTypes.arrayOf(PropTypes.arrayOf(PropTypes.shape({
+    name: PropTypes.string.isRequired,
+    value: PropTypes.string,
+    validation: PropTypes.bool.isRequired,
+  })))
+};

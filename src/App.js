@@ -25,25 +25,55 @@ function App() {
       setErrorFileFormat(true)
       console.log ('bad');
     }
+    
+    // set headers
+    const headers = tableHead.map(header => ({
+      name: header.trim(),
+      rule: setRules(header)
+    }));
+
+    //function for define collumns rules
+    function setRules(header) {
+      switch (header.toLowerCase()) {
+        case ('phone'):
+          return 'should be unique and in format +1хххххххххх';
+        case ('email'):
+          return 'should be unique'
+        case ('age'):
+          return 'should be not less then 21'
+        case ('experience'):
+          return 'should be not more then age'
+        case ('yearly income'):
+          return 'should be integer or decimal and less 1000000'
+        case ('has children'):
+          return 'should be "true" or "false"'
+        case ('license states'):
+          return 'should be name of states (can be devide with "|")'
+        case ('expiration date'):
+          return 'should be in format YYYY-MM-DD or MM-DD-YYYY'
+        case ('license number'):
+          return 'should have 6 symbols (numbers or letters)'
+        case ('dublicate with'):
+            return 'phone or email this user is repeated with the current user'
+        default:
+            return '';
+      }
+    }
 
     //set innitial dates
     const tableBody = tableDataString.slice(1)
       .map((user, i) => (`${i+1}; `+user+'; ').split(/;(?![^"]*"(?:(?:[^"]*"){2})*[^"]*$)/)
         .map((userData, index) => {
-          let userObj = {
+          return {
             name: tableHead[index],
             value: userData.trim(),
             validation: true,
           }
-
-          //check validation
-
-          return userObj;
         })
       )
         .slice(0,-1);
 
-    // functions for validation (start)
+    /* functions for validation (start) */
     function checkNumber(number) {
       let x10 = number.slice(-10);
       if (!Number.isInteger(+x10)) {
@@ -82,7 +112,7 @@ function App() {
               ? true
               : false;
     }
-    // end functions for validation
+    /* end functions for validation */
 
 
     // set date with check validation
@@ -122,7 +152,7 @@ function App() {
           }
           break;
         case ('license states'):
-          // check if it isn't number
+          // check if license states isn't number
           userData.validation = !/\d/.test(userData.value);
           if (userData.value) {
             userData.value = userData.value.replace(',', '|').split('|').map(state => state.trim().slice(0,2).toUpperCase()).join(' | ');
@@ -172,40 +202,6 @@ function App() {
       }
       return userData;
     }));
-
-    // set headers
-    const headers = tableHead.map(header => ({
-      name: header.trim(),
-      rule: setRules(header)
-    }));
-
-    //function for define collumns rules
-    function setRules(header) {
-      switch (header.toLowerCase()) {
-        case ('phone'):
-          return 'should be unique and in format +1хххххххххх';
-        case ('email'):
-          return 'should be unique'
-        case ('age'):
-          return 'should be not less then 21'
-        case ('experience'):
-          return 'should be not more then age'
-        case ('yearly income'):
-          return 'should be integer or decimal and less 1000000'
-        case ('has children'):
-          return 'should be "true" or "false"'
-        case ('license states'):
-          return 'should be name of states (can be devide with "|")'
-        case ('expiration date'):
-          return 'should be in format YYYY-MM-DD or MM-DD-YYYY'
-        case ('license number'):
-          return 'should have 6 symbols (numbers or letters)'
-        case ('dublicate with'):
-            return 'phone or email this user is repeated with the current user'
-        default:
-            return '';
-      }
-    }
 
     // set state
     setData(usersDataWithCheckUnique);
